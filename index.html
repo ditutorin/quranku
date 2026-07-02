@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="description" content="Sahabat Qur'an - Pendamping Muslim Modern, Quran, Dzikir, Sholat, dan Asisten AI">
+    <link rel="manifest" href="data:application/manifest+json,{
+        %22name%22:%22Sahabat%20Qur%27an%22,
+        %22short_name%22:%22SahabatQuran%22,
+        %22description%22:%22Pendamping%20Muslim%20Modern%22,
+        %22start_url%22:%22/%22,
+        %22display%22:%22standalone%22,
+        %22theme_color%22:%22#0d9488%22,
+        %22background_color%22:%22#022c22%22,
+        %22icons%22:[
+            {%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d9488'/%3E%3Ccircle cx='50' cy='45' r='25' fill='%23facc15'/%3E%3Cpath d='M30 70 L70 70 L60 85 L40 85 Z' fill='%23facc15'/%3E%3Ctext x='50' y='52' text-anchor='middle' fill='%230d9488' font-size='30' font-weight='bold' font-family='Arial'%3Eق%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22%7D
+        ]
+    }">
+    <title>Sahabat Qur'an - Pendamping Muslim Modern</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body {
+    background: url('https://images.unsplash.com/photo-1519818187420-8e49de7adeef?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8aXNsYW1pY3xlbnwwfHwwfHx8MA%3D%3D?w=800&h=1200&fit=crop') center/cover fixed;
+    position: relative;
+}
+
+/* Dark overlay biar tulisan tetap jelas */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 44, 34, 0.6); /* Hijau gelap transparan */
+    z-index: 0;
+}
+body::after {
+    content: none; /* Matikan kaligrafi */
+}
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .dark .glass-card {
+            background: rgba(5, 30, 25, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .prayer-card.passed {
+            background: rgba(255,255,245,0.85);
+            color: #064e3b;
+        }
+        .prayer-card.upcoming {
+            background: linear-gradient(135deg, #0d9488, #0f766e);
+            color: white;
+            box-shadow: 0 4px 15px rgba(13,148,136,0.4);
+        }
+        .surah-item.active-bookmark {
+            background: linear-gradient(135deg, rgba(13,148,136,0.4), rgba(250,204,21,0.2));
+            border-left: 4px solid #facc15;
+        }
+        
+        .counter-btn {
+            transition: all 0.15s ease;
+        }
+        .counter-btn:active {
+            transform: scale(0.96);
+        }
+        .dzikir-card.completed {
+            border: 2px solid #10b981;
+            background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(13,148,136,0.1));
+        }
+        
+        .install-btn {
+            background: linear-gradient(135deg, #facc15, #eab308);
+            color: #064e3b;
+            font-weight: bold;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeIn 0.3s ease-out; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); background: #10b981; }
+        }
+        .complete-animation { animation: pulse 0.3s ease-in-out; }
+        
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #022c22, #0d9488);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        /* Surat Pilihan Styles */
+        .surat-pilihan-item {
+            transition: all 0.2s ease;
+        }
+        .surat-pilihan-item:active {
+            transform: scale(0.97);
+        }
+        .surat-pilihan-badge {
+            background: linear-gradient(135deg, #facc15, #eab308);
+            color: #064e3b;
+        }
+    </style>
+</head>
+<body class="text-slate-100 relative min-h-screen pb-28">
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="text-center">
+            <div class="w-24 h-24 mx-auto bg-emerald-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                <span class="text-5xl font-bold text-yellow-400">ق</span>
+            </div>
+            <h1 class="text-2xl font-bold mt-4 text-white">Sahabat Qur'an</h1>
+            <p class="text-emerald-200 text-sm mt-2">Pendamping Muslim Modern</p>
+            <div class="mt-6 w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto min-h-screen flex flex-col px-4 pt-6 relative z-10">
+        
+        <!-- HEADER -->
+        <header class="glass-card rounded-2xl p-4 mb-4 flex justify-between items-center">
+            <div>
+                <p id="app-greeting" class="text-xs opacity-80">Assalamualaikum, Akhi/Ukhti</p>
+                <h1 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-mosque text-emerald-400"></i> Sahabat Qur'an
+                </h1>
+            </div>
+            <div class="flex gap-2">
+                <button id="installBtn" class="install-btn hidden text-xs px-3 py-2 rounded-xl shadow-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-download"></i> Install
+                </button>
+                <div onclick="switchPage('profil')" class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold cursor-pointer shadow-lg">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow mb-4">
+            
+            <!-- DASHBOARD -->
+            <section id="page-dashboard" class="page-content block space-y-4">
+                <div class="glass-card rounded-3xl p-6 text-center space-y-2 relative overflow-hidden">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/20 rounded-full blur-xl"></div>
+                    <div id="txt-jam" class="text-4xl font-extrabold tracking-wider text-emerald-300">00:00:00</div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 text-xs font-medium border-t border-white/20">
+                        <div id="txt-tanggal" class="text-left border-r border-white/20 pr-2">Senin, 1 Jan 2026</div>
+                        <div id="txt-hijriah" class="text-right text-amber-400">1 Rajab 1447 H</div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 text-center italic text-sm border-l-4 border-amber-500 bg-amber-500/10">
+                    <p id="txt-quote">"Maka sesungguhnya beserta kesulitan ada kemudahan."</p>
+                    <span id="txt-quote-ref" class="block text-xs font-semibold mt-1 opacity-70">- QS. Al-Insyirah: 5</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-300 flex justify-between">
+                        <span><i class="fa-solid fa-clock mr-1"></i> Jadwal Sholat</span>
+                        <span class="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full" id="lokasi-dashboard">Jakarta</span>
+                    </h3>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs" id="prayer-grid"></div>
+                    <div class="mt-2 text-center">
+                        <button onclick="requestNotificationPermission()" class="text-[10px] bg-emerald-600/50 px-3 py-1 rounded-full">
+                            <i class="fa-regular fa-bell"></i> Aktifkan Notifikasi Sholat
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 space-y-2">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span><i class="fa-solid fa-book-open mr-1 text-emerald-400"></i> Progres Khatam</span>
+                        <span id="txt-progress-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-amber-400 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="updateProgress(1)" class="text-xs bg-emerald-700/50 px-3 py-1 rounded-full"><i class="fas fa-plus"></i> +1 Ayat</button>
+                        <button onclick="updateProgress(-1)" class="text-xs bg-slate-700/50 px-3 py-1 rounded-full"><i class="fas fa-undo"></i> Kurangi</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- JADWAL + KIBLAT -->
+            <section id="page-jadwal" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4 text-center space-y-4">
+                    <h2 class="font-bold"><i class="fa-solid fa-compass"></i> Kompas Kiblat</h2>
+                    <div class="w-40 h-40 rounded-full border-4 border-emerald-500 mx-auto flex items-center justify-center relative">
+                        <i id="compass-needle" class="fa-solid fa-location-arrow text-3xl text-emerald-400 transition-all duration-300" style="transform: rotate(295deg);"></i>
+                        <span class="absolute top-2 text-[10px] font-bold">U</span>
+                        <span class="absolute bottom-2 text-[10px] font-bold">S</span>
+                        <span class="absolute left-1 text-[10px] font-bold">B</span>
+                        <span class="absolute right-1 text-[10px] font-bold">T</span>
+                    </div>
+                    <p id="lokasi-kiblat" class="text-xs opacity-70">📍 Mendeteksi...</p>
+                    <div><h3 class="font-semibold text-sm">Jadwal Lengkap</h3>
+                    <div class="grid grid-cols-2 gap-2 mt-2 text-xs" id="jadwal-lengkap"></div></div>
+                </div>
+            </section>
+
+            <!-- QUR'AN -->
+            <section id="page-quran" class="page-content hidden space-y-4">
+                <input type="text" id="search-surah" onkeyup="filterSurah()" placeholder="Cari Surat..." class="glass-card rounded-xl p-3 text-sm w-full focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <div id="surah-list" class="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar"></div>
+            </section>
+
+            <!-- SURAT PILIHAN (NEW) -->
+            <section id="page-surat-pilihan" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4">
+                    <h2 class="font-bold text-center mb-3"><i class="fa-solid fa-star text-yellow-400"></i> Surat Pilihan</h2>
+                    <p class="text-xs text-center opacity-70 mb-3">Surat-surat pilihan yang dianjurkan dibaca rutin</p>
+                    <div id="surat-pilihan-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <section id="page-quran-reader" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4">
+                    <div class="flex justify-between flex-wrap gap-2 mb-3">
+                        <button onclick="backToPreviousPage()" class="text-amber-400 text-sm"><i class="fas fa-arrow-left"></i> Kembali</button>
+                        <button id="bookmark-reader-btn" onclick="toggleBookmarkCurrent()" class="text-yellow-400 text-sm"><i class="fa-regular fa-bookmark"></i> Bookmark</button>
+                    </div>
+                    <h2 id="reader-surah-name" class="text-xl font-bold text-center"></h2>
+                    <div id="ayah-container" class="mt-4 space-y-6 max-h-[55vh] overflow-y-auto no-scrollbar"></div>
+                </div>
+            </section>
+
+            <!-- ZAKAT -->
+            <section id="page-zakat" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4 space-y-4">
+                    <h2 class="font-bold text-center"><i class="fa-solid fa-calculator"></i> Kalkulator Zakat</h2>
+                    <div class="flex gap-2 flex-wrap border-b border-white/20 pb-2">
+                        <button onclick="setZakatType('maal')" id="tab-maal" class="tab-zakat text-xs px-3 py-1 rounded-full bg-emerald-600 text-white">Zakat Maal</button>
+                        <button onclick="setZakatType('profesi')" id="tab-profesi" class="tab-zakat text-xs px-3 py-1 rounded-full bg-white/20">Zakat Profesi</button>
+                        <button onclick="setZakatType('fidyah')" id="tab-fidyah" class="tab-zakat text-xs px-3 py-1 rounded-full bg-white/20">Fidyah</button>
+                    </div>
+                    <div id="zakat-input-area" class="space-y-3"></div>
+                    <button onclick="hitungZakatDinamis()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold">Hitung Zakat</button>
+                    <div id="hasil-zakat" class="hidden p-3 rounded-xl bg-emerald-500/20 text-center text-sm"></div>
+                </div>
+            </section>
+
+            <!-- DZIKIR DENGAN COUNTER - VERSI LENGKAP -->
+            <section id="page-dzikir" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4">
+                    <div class="flex gap-2 mb-4 border-b border-white/20 pb-2 flex-wrap">
+                        <button onclick="setDzikirTab('pagi')" id="tab-dzikir-pagi" class="tab-dzikir text-sm px-4 py-1 rounded-full bg-emerald-600 text-white">🌅 Dzikir Pagi</button>
+                        <button onclick="setDzikirTab('petang')" id="tab-dzikir-petang" class="tab-dzikir text-sm px-4 py-1 rounded-full bg-white/20">🌙 Dzikir Petang</button>
+                        <button onclick="resetAllCounters()" class="text-xs bg-red-500/30 px-3 py-1 rounded-full"><i class="fas fa-trash"></i> Reset Semua</button>
+                    </div>
+                    <div id="dzikir-list" class="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar"></div>
+                </div>
+            </section>
+
+            <!-- TAJWID -->
+            <section id="page-tajwid" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <h2 class="font-bold"><i class="fa-solid fa-book-open"></i> Hukum Tajwid</h2>
+                    <div id="tajwid-cards" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- ASISTEN -->
+            <section id="page-jannah" class="page-content hidden flex flex-col h-[65vh]">
+                <div class="glass-card rounded-t-2xl p-3 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-emerald-500 flex items-center justify-center"><i class="fa-solid fa-wand-magic-sparkles text-white text-xs"></i></div>
+                    <div><h3 class="text-sm font-bold">Asisten Jannah</h3><p class="text-[10px] text-emerald-400">AI Penasihat Islami</p></div>
+                </div>
+                <div id="chat-box" class="flex-grow glass-card p-4 overflow-y-auto space-y-3 text-sm no-scrollbar">
+                    <div class="bg-white/10 rounded-2xl p-3 max-w-[85%]">Assalamualaikum. Ada yang bisa saya bantu tentang Islam?</div>
+                </div>
+                <div class="glass-card rounded-b-2xl p-2 flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Tanya tentang Islam..." class="flex-grow bg-transparent p-2 text-sm focus:outline-none">
+                    <button onclick="kirimPesan()" class="bg-emerald-600 p-2 rounded-xl w-10 h-10"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </section>
+
+            <!-- PROFIL -->
+            <section id="page-profil" class="page-content hidden space-y-4">
+                <div class="glass-card rounded-2xl p-4 space-y-4">
+                    <h2 class="font-bold">Pengaturan</h2>
+                    <input type="text" id="input-nama" placeholder="Nama panggilan" class="w-full glass-card rounded-xl p-3 text-sm">
+                    <input type="password" id="input-api" placeholder="Gemini API Key" class="w-full glass-card rounded-xl p-3 text-sm">
+                    <div class="flex justify-between"><span>Mode Gelap</span><button onclick="toggleDarkMode()" class="bg-emerald-600 px-3 py-1 rounded-full text-xs"><i class="fa-solid fa-moon"></i></button></div>
+                    <button onclick="simpanProfil()" class="w-full bg-emerald-600 py-3 rounded-xl text-sm font-bold">Simpan</button>
+                    <div class="text-center text-xs opacity-60 pt-2">Sahabat Qur'an v2.0 • PWA Ready</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- BOTTOM NAV -->
+        <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto glass-card rounded-2xl p-2 flex justify-around items-center z-50 overflow-x-auto no-scrollbar">
+            <button onclick="switchPage('dashboard')" class="nav-btn flex flex-col items-center text-emerald-400" data-page="dashboard"><i class="fa-solid fa-house text-lg"></i><span class="text-[10px]">Home</span></button>
+            <button onclick="switchPage('jadwal')" class="nav-btn flex flex-col items-center text-slate-400" data-page="jadwal"><i class="fa-solid fa-compass text-lg"></i><span class="text-[10px]">Kiblat</span></button>
+            <button onclick="switchPage('quran')" class="nav-btn flex flex-col items-center text-slate-400" data-page="quran"><i class="fa-solid fa-book text-lg"></i><span class="text-[10px]">Qur'an</span></button>
+            <button onclick="switchPage('surat-pilihan')" class="nav-btn flex flex-col items-center text-slate-400" data-page="surat-pilihan"><i class="fa-solid fa-star text-lg"></i><span class="text-[10px]">Pilihan</span></button>
+            <button onclick="switchPage('zakat')" class="nav-btn flex flex-col items-center text-slate-400" data-page="zakat"><i class="fa-solid fa-calculator text-lg"></i><span class="text-[10px]">Zakat</span></button>
+            <button onclick="switchPage('dzikir')" class="nav-btn flex flex-col items-center text-slate-400" data-page="dzikir"><i class="fa-solid fa-pray text-lg"></i><span class="text-[10px]">Dzikir</span></button>
+            <button onclick="switchPage('tajwid')" class="nav-btn flex flex-col items-center text-slate-400" data-page="tajwid"><i class="fa-solid fa-microphone-alt text-lg"></i><span class="text-[10px]">Tajwid</span></button>
+            <button onclick="switchPage('jannah')" class="nav-btn flex flex-col items-center text-slate-400" data-page="jannah"><i class="fa-solid fa-wand-magic-sparkles text-lg"></i><span class="text-[10px]">AI</span></button>
+        </nav>
+    </div>
+
+    <script>
+        // ======================== GLOBAL ========================
+        let prayerTimes = { Subuh: "04:35", Dzuhur: "11:52", Ashar: "15:13", Maghrib: "17:48", Isya: "19:02", Duha: "06:15", Terbit: "05:52" };
+        let readingProgress = parseInt(localStorage.getItem("quranProgress") || "0");
+        let bookmarks = JSON.parse(localStorage.getItem("quranBookmarks") || "[]");
+        let currentSurahList = [];
+        let selectedSurahData = null;
+        let currentZakatType = "maal";
+        let dzikirCounters = JSON.parse(localStorage.getItem("dzikirCounters") || "{}");
+        let notificationEnabled = localStorage.getItem("notifEnabled") === "true";
+        let prayerNotifyInterval = null;
+        let adzanAudio = null;
+        let previousPage = 'dashboard';
+        
+        // ======================== SURAT PILIHAN ========================
+        const suratPilihan = [
+            { number: 36, name: "Yasin", englishName: "Ya-Sin", arab: "يٰسۤ", juz: 22, ayat: 83, keutamaan: "Hati Al-Qur'an, dibaca pagi hari" },
+            { number: 67, name: "Al-Mulk", englishName: "The Sovereignty", arab: "الملك", juz: 29, ayat: 30, keutamaan: "Pelindung dari siksa kubur" },
+            { number: 32, name: "As-Sajadah", englishName: "The Prostration", arab: "السجدة", juz: 21, ayat: 30, keutamaan: "Dibaca malam Jumat" },
+            { number: 56, name: "Al-Waqiah", englishName: "The Inevitable", arab: "الواقعة", juz: 27, ayat: 96, keutamaan: "Pelindung dari kefakiran" },
+            { number: 55, name: "Ar-Rahman", englishName: "The Most Gracious", arab: "الرحمن", juz: 27, ayat: 78, keutamaan: "Pengantar rahmat Allah" },
+            { number: 57, name: "Al-Hadid", englishName: "The Iron", arab: "الحديد", juz: 27, ayat: 29, keutamaan: "Dibaca setiap hari" }
+        ];
+
+        // ======================== DZIKIR VERSI LENGKAP ========================
+        const dzikirPagi = [
+            // === DZIKIR LAMA (DIPERTAHANKAN) ===
+            { id: "pagi1", arab: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", latin: "Subhanallahi wa bihamdihi", arti: "Maha Suci Allah dengan segala pujian-Nya", ref: "HR. Bukhari & Muslim (100x = diampuni dosa)", target: 100 },
+            
+            // === DZIKIR PAGI VERSI LENGKAP ===
+            { id: "pagi2", arab: "اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ", 
+              latin: "Allahumma bika ashbahna, wa bika amsaina, wa bika nahya, wa bika namutu, wa ilaikan nusyur", 
+              arti: "Ya Allah, dengan-Mu kami memasuki pagi, dengan-Mu kami memasuki petang, dengan-Mu kami hidup, dengan-Mu kami mati, dan hanya kepada-Mulah kami kembali", 
+              ref: "HR. Muslim", target: 1 },
+              
+            { id: "pagi3", arab: "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", 
+              latin: "Ashbahna wa ashbahal mulku lillah, wal hamdu lillah, la ilaha illallah wahdahu la syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir", 
+              arti: "Kami memasuki pagi dan kerajaan milik Allah, segala pujian bagi Allah, tiada Tuhan selain Allah semata, milik-Nya kerajaan dan pujian, dan Dia Maha Kuasa atas segala sesuatu", 
+              ref: "HR. Muslim (lanjutan: Allahumma inni as'aluka khaira hadzal yaum...)", target: 1 },
+              
+            { id: "pagi4", arab: "اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذَا الْيَوْمِ، وَخَيْرَ مَا فِيهِ، وَأَعُوذُ بِكَ مِنْ شَرِّ هَذَا الْيَوْمِ، وَشَرِّ مَا فِيهِ", 
+              latin: "Allahumma inni as'aluka khaira hadzal yaum, wa khaira ma fihi, wa a'udzu bika min syarri hadzal yaum, wa syarri ma fihi", 
+              arti: "Ya Allah, aku memohon kebaikan hari ini dan kebaikan apa yang ada di dalamnya, dan aku berlindung dari kejahatan hari ini dan kejahatan apa yang ada di dalamnya", 
+              ref: "HR. Muslim", target: 1 },
+              
+            { id: "pagi5", arab: "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ", 
+              latin: "Astaghfirullah wa atubu ilaih", 
+              arti: "Aku memohon ampun kepada Allah dan bertaubat kepada-Nya", 
+              ref: "HR. Bukhari", target: 3 },
+              
+            { id: "pagi6", arab: "لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", 
+              latin: "La ilaha illallah wahdahu la syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir", 
+              arti: "Tiada Tuhan selain Allah semata, milik-Nya kerajaan dan pujian, dan Dia Maha Kuasa atas segala sesuatu", 
+              ref: "HR. Bukhari (100x = 10 kebaikan & 10 dosa dihapus)", target: 100 },
+              
+            { id: "pagi7", arab: "حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ", 
+              latin: "Hasbiyallahu la ilaha illa huwa, 'alaihi tawakkaltu wa huwa rabbul 'arsyil 'azhim", 
+              arti: "Cukuplah Allah bagiku, tiada Tuhan selain Dia, kepada-Nya aku bertawakal dan Dia adalah Tuhan Arsy yang agung", 
+              ref: "QS. At-Taubah: 129", target: 3 },
+              
+            // === DZIKIR BARU LENGKAP ===
+            { id: "pagi8", arab: "آيَةُ الْكُرْسِيِّ", 
+              latin: "Ayatul Kursi (QS. Al-Baqarah: 255)", 
+              arti: "Allah, tiada Tuhan selain Dia, Yang Hidup, Yang Berdiri Sendiri, tidak mengantuk dan tidak tidur...", 
+              ref: "HR. Bukhari (Perlindungan dari setan)", target: 1 },
+              
+            { id: "pagi9", arab: "قُلْ هُوَ اللَّهُ أَحَدٌ", 
+              latin: "Qul huwallahu ahad (Al-Ikhlas)", 
+              arti: "Katakanlah: Dialah Allah Yang Maha Esa", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "pagi10", arab: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ", 
+              latin: "Qul a'udzu birabbil falaq (Al-Falaq)", 
+              arti: "Katakanlah: Aku berlindung kepada Tuhan yang menguasai subuh", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "pagi11", arab: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ", 
+              latin: "Qul a'udzu birabbinnas (An-Nas)", 
+              arti: "Katakanlah: Aku berlindung kepada Tuhan manusia", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "pagi12", arab: "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ نَبِيًّا", 
+              latin: "Radhitu billahi rabba, wa bil Islami dina, wa bi Muhammadin nabiyya", 
+              arti: "Aku ridha Allah sebagai Tuhan, Islam sebagai agama, dan Muhammad sebagai nabi", 
+              ref: "HR. Abu Dawud (3x = wajib surga)", target: 3 },
+              
+            { id: "pagi13", arab: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ", 
+              latin: "Allahumma inni as-alukal 'afiyah fid dunya wal akhirah", 
+              arti: "Ya Allah, aku mohon keselamatan di dunia dan akhirat", 
+              ref: "HR. Tirmidzi", target: 3 },
+              
+            { id: "pagi14", arab: "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ", 
+              latin: "Bismillahilladzi la yadurru ma'asmihi syai'un fil ardhi wa la fis sama'i wa huwas sami'ul 'alim", 
+              arti: "Dengan nama Allah yang bersama nama-Nya tidak ada bahaya di bumi dan di langit, dan Dia Maha Mendengar lagi Maha Mengetahui", 
+              ref: "HR. Ibnu Majah (3x = perlindungan)", target: 3 },
+              
+            { id: "pagi15", arab: "أَعُوذُ بِاللَّهِ السَّمِيعِ الْعَلِيمِ مِنَ الشَّيْطَانِ الرَّجِيمِ", 
+              latin: "A'udzu billahis sami'il 'alimi minasy syaitanir rajim", 
+              arti: "Aku berlindung kepada Allah Yang Maha Mendengar lagi Maha Mengetahui dari setan yang terkutuk", 
+              ref: "HR. Ahmad", target: 1 }
+        ];
+
+        const dzikirPetang = [
+            // === DZIKIR LAMA (DIPERTAHANKAN) ===
+            { id: "petang1", arab: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", 
+              latin: "Subhanallahi wa bihamdihi", 
+              arti: "Maha Suci Allah dengan segala pujian-Nya", 
+              ref: "HR. Bukhari (33x)", target: 33 },
+              
+            // === DZIKIR PETANG VERSI LENGKAP ===
+            { id: "petang2", arab: "اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ", 
+              latin: "Allahumma bika amsaina, wa bika ashbahna, wa bika nahya, wa bika namutu, wa ilaikal mashir", 
+              arti: "Ya Allah, dengan-Mu kami memasuki petang, dengan-Mu kami memasuki pagi, dengan-Mu kami hidup, dengan-Mu kami mati, dan hanya kepada-Mulah kami kembali", 
+              ref: "HR. Muslim", target: 1 },
+              
+            { id: "petang3", arab: "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", 
+              latin: "Amsaina wa amsal mulku lillah, wal hamdu lillah, la ilaha illallah wahdahu la syarikalah, lahul mulku wa lahul hamdu wa huwa 'ala kulli syai'in qadir", 
+              arti: "Kami memasuki petang dan kerajaan milik Allah, segala pujian bagi Allah, tiada Tuhan selain Allah semata, milik-Nya kerajaan dan pujian, dan Dia Maha Kuasa atas segala sesuatu", 
+              ref: "HR. Muslim", target: 1 },
+              
+            { id: "petang4", arab: "اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذِهِ اللَّيْلَةِ، وَخَيْرَ مَا فِيهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ هَذِهِ اللَّيْلَةِ، وَشَرِّ مَا فِيهَا", 
+              latin: "Allahumma inni as'aluka khaira hadzihil lailah, wa khaira ma fiha, wa a'udzu bika min syarri hadzihil lailah, wa syarri ma fiha", 
+              arti: "Ya Allah, aku memohon kebaikan malam ini dan kebaikan apa yang ada di dalamnya, dan aku berlindung dari kejahatan malam ini dan kejahatan apa yang ada di dalamnya", 
+              ref: "HR. Muslim", target: 1 },
+              
+            { id: "petang5", arab: "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ", 
+              latin: "Astaghfirullah wa atubu ilaih", 
+              arti: "Aku memohon ampun kepada Allah dan bertaubat kepada-Nya", 
+              ref: "HR. Bukhari", target: 3 },
+              
+            { id: "petang6", arab: "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ", 
+              latin: "A'udzu bikalimatillahit tammati min syarri ma khalaq", 
+              arti: "Aku berlindung dengan kalimat-kalimat Allah yang sempurna dari kejahatan makhluk yang Dia ciptakan", 
+              ref: "HR. Muslim (3x = perlindungan)", target: 3 },
+              
+            // === DZIKIR BARU LENGKAP ===
+            { id: "petang7", arab: "آيَةُ الْكُرْسِيِّ", 
+              latin: "Ayatul Kursi (QS. Al-Baqarah: 255)", 
+              arti: "Allah, tiada Tuhan selain Dia, Yang Hidup, Yang Berdiri Sendiri", 
+              ref: "HR. Bukhari (Perlindungan dari setan)", target: 1 },
+              
+            { id: "petang8", arab: "قُلْ هُوَ اللَّهُ أَحَدٌ", 
+              latin: "Qul huwallahu ahad (Al-Ikhlas)", 
+              arti: "Katakanlah: Dialah Allah Yang Maha Esa", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "petang9", arab: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ", 
+              latin: "Qul a'udzu birabbil falaq (Al-Falaq)", 
+              arti: "Katakanlah: Aku berlindung kepada Tuhan yang menguasai subuh", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "petang10", arab: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ", 
+              latin: "Qul a'udzu birabbinnas (An-Nas)", 
+              arti: "Katakanlah: Aku berlindung kepada Tuhan manusia", 
+              ref: "HR. Bukhari (3x = perlindungan)", target: 3 },
+              
+            { id: "petang11", arab: "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ نَبِيًّا", 
+              latin: "Radhitu billahi rabba, wa bil Islami dina, wa bi Muhammadin nabiyya", 
+              arti: "Aku ridha Allah sebagai Tuhan, Islam sebagai agama, dan Muhammad sebagai nabi", 
+              ref: "HR. Abu Dawud (3x = wajib surga)", target: 3 },
+              
+            { id: "petang12", arab: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ", 
+              latin: "Allahumma inni as-alukal 'afiyah fid dunya wal akhirah", 
+              arti: "Ya Allah, aku mohon keselamatan di dunia dan akhirat", 
+              ref: "HR. Tirmidzi", target: 3 },
+              
+            { id: "petang13", arab: "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ", 
+              latin: "Bismillahilladzi la yadurru ma'asmihi syai'un fil ardhi wa la fis sama'i wa huwas sami'ul 'alim", 
+              arti: "Dengan nama Allah yang bersama nama-Nya tidak ada bahaya di bumi dan di langit, dan Dia Maha Mendengar lagi Maha Mengetahui", 
+              ref: "HR. Ibnu Majah (3x = perlindungan)", target: 3 },
+              
+            { id: "petang14", arab: "أَعُوذُ بِاللَّهِ السَّمِيعِ الْعَلِيمِ مِنَ الشَّيْطَانِ الرَّجِيمِ", 
+              latin: "A'udzu billahis sami'il 'alimi minasy syaitanir rajim", 
+              arti: "Aku berlindung kepada Allah Yang Maha Mendengar lagi Maha Mengetahui dari setan yang terkutuk", 
+              ref: "HR. Ahmad", target: 1 }
+        ];
+
+        // ======================== FUNGSI DZIKIR ========================
+        function renderDzikirList(dzikirData, type) {
+            const container = document.getElementById('dzikir-list');
+            container.innerHTML = dzikirData.map(d => {
+                const key = `${type}_${d.id}`;
+                let count = dzikirCounters[key] || 0;
+                let isCompleted = count >= d.target;
+                let percent = (count / d.target) * 100;
+                
+                return `
+                    <div class="dzikir-card glass-card p-4 rounded-xl transition-all ${isCompleted ? 'completed' : ''}" data-key="${key}" data-target="${d.target}">
+                        <p class="text-right text-2xl font-arabic mb-2" style="font-family: 'Times New Roman', serif;">${d.arab}</p>
+                        <p class="text-xs italic opacity-80">${d.latin}</p>
+                        <p class="text-[11px] mt-1">${d.arti}</p>
+                        <p class="text-[9px] text-amber-400 mt-1"><i class="fas fa-book"></i> ${d.ref}</p>
+                        <div class="mt-3"><div class="flex justify-between text-[10px]"><span>Target: ${d.target} x</span><span>${count}/${d.target}</span></div>
+                        <div class="w-full bg-slate-600 rounded-full h-1.5"><div class="bg-emerald-500 h-full transition-all" style="width: ${percent}%"></div></div></div>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="updateCounter('${key}', ${d.target}, 1, this)" class="counter-btn flex-1 bg-emerald-600 py-2 rounded-xl text-sm font-bold"><i class="fas fa-plus-circle"></i> +1</button>
+                            <button onclick="updateCounter('${key}', ${d.target}, 10, this)" class="counter-btn flex-1 bg-emerald-500/50 py-2 rounded-xl text-sm"><i class="fas fa-plus"></i> +10</button>
+                            <button onclick="resetCounter('${key}', ${d.target}, this)" class="counter-btn px-3 bg-slate-600/50 rounded-xl"><i class="fas fa-undo-alt"></i></button>
+                        </div>
+                        ${isCompleted ? `<div class="mt-2 text-center text-green-400 text-xs"><i class="fas fa-check-circle"></i> ✅ Selesai! Semoga diterima Allah.</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateCounter(key, target, increment, btn) {
+            let current = dzikirCounters[key] || 0;
+            let newCount = Math.min(current + increment, target);
+            dzikirCounters[key] = newCount;
+            localStorage.setItem("dzikirCounters", JSON.stringify(dzikirCounters));
+            
+            let card = btn.closest('.dzikir-card');
+            let textSpan = card.querySelector('.flex.justify-between.text-\\[10px\\] span:last-child');
+            let progressBar = card.querySelector('.bg-emerald-500');
+            let percent = (newCount / target) * 100;
+            if (textSpan) textSpan.innerText = `${newCount}/${target}`;
+            if (progressBar) progressBar.style.width = `${percent}%`;
+            
+            if (newCount >= target && !card.classList.contains('completed')) {
+                card.classList.add('completed');
+                card.insertAdjacentHTML('beforeend', `<div class="mt-2 text-center text-green-400 text-xs animate-fade"><i class="fas fa-check-circle"></i> ✅ Selesai! Semoga diterima Allah.</div>`);
+                card.classList.add('complete-animation');
+                setTimeout(() => card.classList.remove('complete-animation'), 300);
+                if (adzanAudio) adzanAudio.play().catch(e=>console.log);
+            }
+        }
+        
+        function resetCounter(key, target, btn) {
+            dzikirCounters[key] = 0;
+            localStorage.setItem("dzikirCounters", JSON.stringify(dzikirCounters));
+            let card = btn.closest('.dzikir-card');
+            card.classList.remove('completed');
+            let textSpan = card.querySelector('.flex.justify-between.text-\\[10px\\] span:last-child');
+            let progressBar = card.querySelector('.bg-emerald-500');
+            if (textSpan) textSpan.innerText = `0/${target}`;
+            if (progressBar) progressBar.style.width = '0%';
+            let completeDiv = card.querySelector('.mt-2.text-center.text-green-400');
+            if (completeDiv) completeDiv.remove();
+        }
+        
+        function resetAllCounters() {
+            if(confirm("Reset semua counter dzikir?")) {
+                dzikirCounters = {};
+                localStorage.setItem("dzikirCounters", JSON.stringify(dzikirCounters));
+                setDzikirTab('pagi');
+            }
+        }
+        
+        function setDzikirTab(tab) {
+            document.getElementById('tab-dzikir-pagi').classList.toggle('bg-emerald-600', tab === 'pagi');
+            document.getElementById('tab-dzikir-petang').classList.toggle('bg-emerald-600', tab === 'petang');
+            renderDzikirList(tab === 'pagi' ? dzikirPagi : dzikirPetang, tab);
+        }
+
+        // ======================== SURAT PILIHAN ========================
+        function renderSuratPilihan() {
+            const container = document.getElementById('surat-pilihan-list');
+            container.innerHTML = suratPilihan.map(s => `
+                <div onclick="openSuratPilihan(${s.number})" class="surat-pilihan-item glass-card p-4 rounded-xl cursor-pointer hover:bg-white/10 transition">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-amber-400">${s.number}</span>
+                            <span class="font-bold">${s.name}</span>
+                            <span class="text-xs opacity-60">(${s.englishName})</span>
+                            <p class="text-[10px] opacity-60 mt-1">${s.arab} • ${s.ayat} ayat • Juz ${s.juz}</p>
+                        </div>
+                        <div class="surat-pilihan-badge text-[8px] px-2 py-1 rounded-full font-bold">${s.keutamaan}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openSuratPilihan(num) {
+            // Cari surat di daftar pilihan atau di daftar umum
+            let surah = currentSurahList.find(s => s.number === num);
+            if (!surah) {
+                // Coba ambil dari API
+                try {
+                    let res = await fetch(`https://api.alquran.cloud/v1/surah/${num}`);
+                    let data = await res.json();
+                    if (data.code === 200) {
+                        surah = data.data;
+                        // Tambahkan ke currentSurahList agar tersimpan
+                        if (!currentSurahList.find(s => s.number === num)) {
+                            currentSurahList.push(surah);
+                        }
+                    }
+                } catch(e) {
+                    alert("Gagal memuat surat");
+                    return;
+                }
+            }
+            if (!surah) {
+                alert("Surat tidak ditemukan");
+                return;
+            }
+            selectedSurahData = surah;
+            document.getElementById('reader-surah-name').innerHTML = `${surah.name} (${surah.englishName})`;
+            
+            try {
+                let res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,id.indonesian`);
+                let data = await res.json();
+                if (data.code !== 200) {
+                    alert("Gagal memuat ayat");
+                    return;
+                }
+                let html = data.data[0].ayahs.map((a,i) => `
+                    <div class="border-b border-white/20 pb-4">
+                        <p class="text-right text-xl" style="font-family: 'Times New Roman', serif;">${a.text}</p>
+                        <p class="text-sm mt-2">${data.data[1].ayahs[i].text}</p>
+                        <div class="text-[10px] text-amber-400 mt-1">Ayat ${a.numberInSurah}</div>
+                    </div>
+                `).join('');
+                document.getElementById('ayah-container').innerHTML = html;
+                previousPage = 'surat-pilihan';
+                switchPage('quran-reader');
+            } catch(e) {
+                alert("Gagal memuat ayat: " + e.message);
+            }
+        }
+
+        // ======================== FUNGSI LAINNYA ========================
+        function backToPreviousPage() {
+            switchPage(previousPage);
+            if (previousPage === 'quran') loadSurahList();
+            if (previousPage === 'surat-pilihan') renderSuratPilihan();
+        }
+
+        // ======================== NOTIFIKASI SHOLAT ========================
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') {
+                        localStorage.setItem("notifEnabled", "true");
+                        notificationEnabled = true;
+                        alert("Notifikasi diaktifkan! Anda akan mendapat pengingat sholat.");
+                        startPrayerNotification();
+                    } else alert("Izinkan notifikasi untuk mendapat pengingat sholat.");
+                });
+            } else alert("Browser tidak support notifikasi.");
+        }
+        
+        function startPrayerNotification() {
+            if (prayerNotifyInterval) clearInterval(prayerNotifyInterval);
+            prayerNotifyInterval = setInterval(() => {
+                if (!notificationEnabled) return;
+                let now = new Date();
+                let curHour = now.getHours().toString().padStart(2,'0');
+                let curMin = now.getMinutes().toString().padStart(2,'0');
+                let curTime = `${curHour}:${curMin}`;
+                
+                for (let [prayer, time] of Object.entries(prayerTimes)) {
+                    if (time === curTime && !localStorage.getItem(`notif_${prayer}_${now.toDateString()}`)) {
+                        new Notification(`🕌 Waktu ${prayer}`, { body: `Waktu ${prayer} telah masuk. Ayo tunaikan sholat!`, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230d9488'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='%23facc15' font-size='50'%3Eق%3C/text%3E%3C/svg%3E" });
+                        if (adzanAudio) adzanAudio.play().catch(e=>console.log);
+                        localStorage.setItem(`notif_${prayer}_${now.toDateString()}`, "sent");
+                    }
+                }
+            }, 30000);
+        }
+        
+        // ======================== API QUR'AN ========================
+        async function loadSurahList() {
+            let container = document.getElementById('surah-list');
+            container.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>';
+            try {
+                let res = await fetch('https://api.alquran.cloud/v1/surah');
+                let data = await res.json();
+                if (data.code === 200) { currentSurahList = data.data; renderSurahList(currentSurahList); }
+            } catch(e) { container.innerHTML = '<div class="text-center text-red-400">Gagal memuat</div>'; }
+        }
+        
+        function renderSurahList(surahs) {
+            document.getElementById('surah-list').innerHTML = surahs.map(s => `
+                <div onclick="openSurah(${s.number})" class="surah-item flex justify-between p-3 rounded-xl glass-card cursor-pointer hover:bg-white/10 ${bookmarks.includes(s.number) ? 'active-bookmark' : ''}">
+                    <div><span class="text-xs font-bold">${s.number}</span> ${s.name} (${s.englishName})</div>
+                    <i class="fas ${bookmarks.includes(s.number) ? 'fa-bookmark text-yellow-400' : 'fa-book-open'}"></i>
+                </div>
+            `).join('');
+        }
+        
+        function filterSurah() {
+            let kw = document.getElementById('search-surah').value.toLowerCase();
+            if (!currentSurahList.length) return;
+            renderSurahList(currentSurahList.filter(s => s.name.toLowerCase().includes(kw) || s.englishName.toLowerCase().includes(kw)));
+        }
+        
+        async function openSurah(num) {
+            let surah = currentSurahList.find(s => s.number === num);
+            if (!surah) {
+                try {
+                    let res = await fetch(`https://api.alquran.cloud/v1/surah/${num}`);
+                    let data = await res.json();
+                    if (data.code === 200) {
+                        surah = data.data;
+                        currentSurahList.push(surah);
+                    }
+                } catch(e) {
+                    alert("Gagal memuat surat");
+                    return;
+                }
+            }
+            if (!surah) {
+                alert("Surat tidak ditemukan");
+                return;
+            }
+            selectedSurahData = surah;
+            document.getElementById('reader-surah-name').innerHTML = `${surah.name} (${surah.englishName})`;
+            
+            try {
+                let res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,id.indonesian`);
+                let data = await res.json();
+                if (data.code !== 200) {
+                    alert("Gagal memuat ayat");
+                    return;
+                }
+                let html = data.data[0].ayahs.map((a,i) => `
+                    <div class="border-b border-white/20 pb-4">
+                        <p class="text-right text-xl" style="font-family: 'Times New Roman', serif;">${a.text}</p>
+                        <p class="text-sm mt-2">${data.data[1].ayahs[i].text}</p>
+                        <div class="text-[10px] text-amber-400 mt-1">Ayat ${a.numberInSurah}</div>
+                    </div>
+                `).join('');
+                document.getElementById('ayah-container').innerHTML = html;
+                previousPage = 'quran';
+                switchPage('quran-reader');
+            } catch(e) {
+                alert("Gagal memuat ayat: " + e.message);
+            }
+        }
+        
+        function toggleBookmarkCurrent() {
+            if (!selectedSurahData) return;
+            let idx = bookmarks.indexOf(selectedSurahData.number);
+            if (idx === -1) bookmarks.push(selectedSurahData.number);
+            else bookmarks.splice(idx, 1);
+            localStorage.setItem("quranBookmarks", JSON.stringify(bookmarks));
+            if (previousPage === 'quran') loadSurahList();
+        }
+        
+        function updateProgress(val) { readingProgress = Math.max(0, readingProgress + val); localStorage.setItem("quranProgress", readingProgress); let p = (readingProgress/100)*100; document.getElementById('progress-bar').style.width = Math.min(100,p)+"%"; document.getElementById('txt-progress-percent').innerText = Math.min(100,Math.floor(p))+"%"; }
+        
+        function renderPrayerTimes() {
+            let grid = document.getElementById('prayer-grid'); grid.innerHTML = ''; let curMin = new Date().getHours()*60+new Date().getMinutes();
+            ["Subuh","Dzuhur","Ashar","Maghrib","Isya"].forEach(p => { let w = prayerTimes[p]; if(w){ let [h,m]=w.split(':'); let cls = (parseInt(h)*60+parseInt(m)) > curMin ? "upcoming" : "passed"; grid.innerHTML += `<div class="prayer-card ${cls} p-2 rounded-xl"><div class="text-[10px]">${p}</div><div class="text-sm font-bold">${w}</div></div>`; } });
+            document.getElementById('jadwal-lengkap').innerHTML = Object.entries(prayerTimes).map(([n,w]) => `<div class="glass-card p-1 rounded-lg text-center">${n}: ${w}</div>`).join('');
+        }
+        
+        function setZakatType(t) { currentZakatType = t; document.querySelectorAll('.tab-zakat').forEach(btn=>btn.classList.remove('bg-emerald-600','text-white')); document.getElementById(`tab-${t}`).classList.add('bg-emerald-600','text-white'); let area = document.getElementById('zakat-input-area'); if(t==='maal') area.innerHTML = `<input id="zakat-maal" type="number" placeholder="Total Harta (Rp)" class="w-full glass-card p-3 rounded-xl">`; else if(t==='profesi') area.innerHTML = `<input id="zakat-profesi" type="number" placeholder="Penghasilan per bulan (Rp)" class="w-full glass-card p-3 rounded-xl">`; else area.innerHTML = `<input id="zakat-fidyah" type="number" placeholder="Jumlah hari puasa ditinggal" class="w-full glass-card p-3 rounded-xl">`; }
+        
+        function hitungZakatDinamis() { let h = document.getElementById('hasil-zakat'); h.classList.remove('hidden'); let nishab=85*1400000; if(currentZakatType==='maal'){ let val=parseFloat(document.getElementById('zakat-maal')?.value)||0; if(val>=nishab) h.innerHTML=`Zakat Maal: <span class="text-emerald-400">Rp ${(val*0.025).toLocaleString('id-ID')}</span>`; else h.innerHTML=`Harta belum mencapai nishab`; } else if(currentZakatType==='profesi'){ let gaji=parseFloat(document.getElementById('zakat-profesi')?.value)||0; if(gaji>=nishab/12) h.innerHTML=`Zakat Profesi: Rp ${(gaji*0.025).toLocaleString('id-ID')}`; else h.innerHTML=`Penghasilan belum mencapai nishab`; } else { let hari=parseFloat(document.getElementById('zakat-fidyah')?.value)||0; h.innerHTML=`Fidyah: Rp ${(hari*30000).toLocaleString('id-ID')}`; } }
+        
+        function renderTajwid() { document.getElementById('tajwid-cards').innerHTML = tajwidData.map(t=>`<div class="glass-card p-3 rounded-xl"><div class="font-bold text-emerald-400">${t.title}</div><p class="text-xs">${t.desc}</p><p class="text-[10px] opacity-70">Makhraj: ${t.makhraj}</p></div>`).join(''); }
+        
+        async function kirimPesan() { let msg = document.getElementById('chat-input').value.trim(); let apiKey = localStorage.getItem('gemini_key'); if(!msg) return; if(!apiKey){ alert("Masukkan API Key Gemini di Profil"); return; } let chatBox = document.getElementById('chat-box'); chatBox.innerHTML += `<div class="bg-emerald-600 rounded-2xl p-3 max-w-[85%] self-end ml-auto">${msg}</div>`; document.getElementById('chat-input').value = ''; let loading = document.createElement('div'); loading.className = "bg-white/10 rounded-2xl p-3 max-w-[85%] italic"; loading.innerText = "Sedang mencari jawaban..."; chatBox.appendChild(loading); try{ let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents:[{parts:[{text:`Kamu adalah penasihat Islami. Jawab pertanyaan ini: ${msg}`}]}]}) }); let data = await res.json(); loading.remove(); chatBox.innerHTML += `<div class="bg-white/10 rounded-2xl p-3 max-w-[85%]">${data.candidates[0].content.parts[0].text}</div>`; } catch(e){ loading.innerText = "Error, cek API Key"; } }
+        
+        function getLocationAndKiblat() { if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ let lat1=pos.coords.latitude, lon1=pos.coords.longitude, lat2=21.4225, lon2=39.8262; let dLon=(lon2-lon1)*Math.PI/180; let y=Math.sin(dLon)*Math.cos(lat2*Math.PI/180); let x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLon); let brng=(Math.atan2(y,x)*180/Math.PI+360)%360; document.getElementById('compass-needle').style.transform=`rotate(${brng}deg)`; document.getElementById('lokasi-kiblat').innerHTML=`📍 ${lat1.toFixed(2)}, ${lon1.toFixed(2)} | Kiblat: ${brng.toFixed(0)}°`; }); } }
+        
+        function switchPage(page) { 
+            document.querySelectorAll('.page-content').forEach(p=>p.classList.add('hidden')); 
+            document.getElementById(`page-${page}`).classList.remove('hidden'); 
+            document.querySelectorAll('.nav-btn').forEach(btn=>{ 
+                if(btn.dataset.page===page){ 
+                    btn.classList.add('text-emerald-400'); 
+                    btn.classList.remove('text-slate-400'); 
+                } else { 
+                    btn.classList.remove('text-emerald-400'); 
+                    btn.classList.add('text-slate-400'); 
+                } 
+            }); 
+            if(page==='dzikir') setDzikirTab('pagi'); 
+            if(page==='tajwid') renderTajwid(); 
+            if(page==='quran') loadSurahList(); 
+            if(page==='surat-pilihan') renderSuratPilihan(); 
+            if(page==='jadwal') getLocationAndKiblat(); 
+        }
+        
+        function simpanProfil() { let nama = document.getElementById('input-nama').value; let api = document.getElementById('input-api').value; localStorage.setItem('username', nama); localStorage.setItem('gemini_key', api); document.getElementById('app-greeting').innerHTML = `Assalamualaikum, ${nama || "Akhi/Ukhti"} semoga Allah merahmatimu`; alert("Tersimpan!"); }
+        
+        function loadProfilData() { let nama = localStorage.getItem('username')||"Akhi/Ukhti"; document.getElementById('app-greeting').innerHTML = `Assalamualaikum, ${nama} semoga Allah merahmatimu`; document.getElementById('input-nama').value = nama; document.getElementById('input-api').value = localStorage.getItem('gemini_key')||""; }
+        
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
+        
+        function initClock() { setInterval(()=>{ let n=new Date(); document.getElementById('txt-jam').innerText=n.toLocaleTimeString('id-ID'); document.getElementById('txt-tanggal').innerText=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); },1000); }
+        
+        function fetchHijri() { fetch('https://api.aladhan.com/v1/gToH').then(res=>res.json()).then(data=>{ if(data.code===200) document.getElementById('txt-hijriah').innerText=`${data.data.hijri.day} ${data.data.hijri.month.en} ${data.data.hijri.year} H`; }).catch(()=>{}); }
+        
+        // ======================== TAJWID DATA ========================
+        const tajwidData = [
+            { title:"Idgham Bighunnah", desc:"Nun mati/tanwin bertemu ي ن م و, dengung 2 harakat.", makhraj:"Lidah & Langit" },
+            { title:"Ikhfa Haqiqi", desc:"Samar antara izhar dan idgham, 15 huruf.", makhraj:"Sesuai huruf" },
+            { title:"Iqlab", desc:"Nun mati/tanwin bertemu ب jadi mim.", makhraj:"Dua bibir" },
+            { title:"Mad Thabi'i", desc:"Panjang 2 harakat.", makhraj:"Rongga mulut" },
+            { title:"Idgham Bilaghunnah", desc:"Nun mati/tanwin bertemu ل ر, tanpa dengung.", makhraj:"Lidah" },
+            { title:"Izhar Halqi", desc:"Nun mati/tanwin bertemu 6 huruf halqi (ء هـ ع ح غ خ).", makhraj:"Tenggorokan" }
+        ];
+
+        // ======================== PWA INSTALL ========================
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').classList.remove('hidden'); });
+        document.getElementById('installBtn')?.addEventListener('click', () => { if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; document.getElementById('installBtn').classList.add('hidden'); }); } });
+        
+        // ======================== SPLASH ========================
+        setTimeout(() => { let splash = document.getElementById('splash'); if(splash) splash.style.opacity='0'; setTimeout(()=>splash?.remove(),500); }, 1500);
+        
+        // ======================== INIT ========================
+        document.addEventListener("DOMContentLoaded", () => {
+            initClock(); 
+            let q = islamicQuotes[new Date().getDate() % islamicQuotes.length]; 
+            document.getElementById('txt-quote').innerText = `"${q.quote}"`; 
+            document.getElementById('txt-quote-ref').innerText = `- ${q.ref}`;
+            fetchHijri(); 
+            renderPrayerTimes(); 
+            loadProfilData(); 
+            updateProgress(0); 
+            setZakatType('maal'); 
+            setDzikirTab('pagi'); 
+            getLocationAndKiblat(); 
+            renderSuratPilihan();
+            adzanAudio = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"); 
+            adzanAudio.volume = 0.3;
+            if(localStorage.getItem("notifEnabled")==="true") startPrayerNotification();
+        });
+
+        // ======================== QUOTES DATA ========================
+        const islamicQuotes = [
+            { quote: "Maka sesungguhnya beserta kesulitan ada kemudahan.", ref: "QS. Al-Insyirah: 5" },
+            { quote: "Sesungguhnya Allah tidak akan mengubah keadaan suatu kaum hingga mereka mengubah diri mereka sendiri.", ref: "QS. Ar-Ra'd: 11" },
+            { quote: "Barangsiapa bertakwa kepada Allah, niscaya Dia akan membukakan jalan keluar baginya.", ref: "QS. Ath-Thalaq: 2" },
+            { quote: "Dan barangsiapa bertawakal kepada Allah, niscaya Allah akan mencukupkan (keperluan)nya.", ref: "QS. Ath-Thalaq: 3" },
+            { quote: "Sesungguhnya shalat itu mencegah dari perbuatan keji dan mungkar.", ref: "QS. Al-Ankabut: 45" }
+        ];
+    </script>
+</body>
+</html>
