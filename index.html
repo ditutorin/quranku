@@ -207,6 +207,7 @@ html.dark .countbtn.done{ color:#06231a }
 <footer class="relative z-10 pb-10 text-center">
   <p class="text-xs muted"><i class="fa-solid fa-star-and-crescent mr-1" style="color:var(--gold)"></i>
     Islamuna — semoga menjadi amal jariyah yang bermanfaat. Barakallahu fiikum.</p>
+  <p class="text-[10px] muted mt-2">&copy; 2026 JP Creative. All rights reserved.</p>
 </footer>
 
 <!-- Toast & Modal -->
@@ -796,15 +797,25 @@ async function viewQuran(){
       ${'<div class="skl h-16"></div>'.repeat(6)}
     </div></div>`;
   if(!SURAT_LIST){
-    try{
-      const r = await fetch('https://api.myquran.com/v2/quran/surat/semua');
-      const j = await r.json();
-      SURAT_LIST = (j.data||[]).map(s => ({n:s.nomor, ar:s.nama, la:s.namaLatin, id:s.makna||'', ay:s.jumlahAyat, pl:s.tempatTurun}));
-    }catch(e){
-      $('#qList').innerHTML = `<div class="card p-5 text-sm muted text-center"><i class="fa-solid fa-wifi mr-1"></i>Gagal memuat daftar surat. Periksa koneksi lalu coba lagi. <button class="btn btn-brand ml-2" data-go="quran">Muat ulang</button></div>`;
-      return;
-    }
+  try{
+    const r = await fetch('https://equran.id/api/v2/surat');
+    const j = await r.json();
+    // EQuran v2 membungkus data dalam { code, message, data }
+    SURAT_LIST = (j.data || []).map(s => ({
+      n: s.nomor,
+      ar: s.nama,
+      la: s.namaLatin,
+      id: s.arti || '',
+      ay: s.jumlahAyat,
+      pl: s.tempatTurun
+    }));
+  }catch(e){
+    $('#qList').innerHTML = `<div class="card p-5 text-sm muted text-center">
+      <i class="fa-solid fa-wifi mr-1"></i>Gagal memuat daftar surat. 
+      <button class="btn btn-brand ml-2" data-go="quran">Muat ulang</button></div>`;
+    return;
   }
+}
   renderQList('');
   $('#qSearch').addEventListener('input', e => renderQList(e.target.value));
 }
@@ -836,17 +847,33 @@ async function openReader(no, gotoAyat=0){
   let data = READER.cache.get(no);
   if(!data){
     try{
-      const r = await fetch(`https://api.myquran.com/v2/quran/surat/${no}`);
-      const j = await r.json(); const d = j.data;
-      data = {n:d.nomor, ar:d.nama, la:d.namaLatin, id:d.makna||'', ay:d.jumlahAyat, pl:d.tempatTurun,
-              ayat:(d.ayat||[]).map(a => ({n:a.nomor, ar:a.teksArab, la:a.teksLatin, id:a.teksIndonesia}))};
-      READER.cache.set(no, data);
-    }catch(e){
-      V().innerHTML = `<div class="view-in"><button class="btn btn-ghost mb-4" data-go="quran"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-        <div class="card p-6 text-sm muted text-center"><i class="fa-solid fa-wifi mr-1"></i>Gagal memuat surat. Periksa koneksi lalu coba lagi.
-        <div class="mt-3"><button class="btn btn-brand" data-go="quran/${no}">Coba lagi</button></div></div></div>`;
-      return;
-    }
+  const r = await fetch(`https://equran.id/api/v2/surat/${no}`);
+  const j = await r.json();
+  const d = j.data;
+  data = {
+    n: d.nomor,
+    ar: d.nama,
+    la: d.namaLatin,
+    id: d.arti || '',
+    ay: d.jumlahAyat,
+    pl: d.tempatTurun,
+    ayat: (d.ayat || []).map(a => ({
+      n: a.nomorAyat,
+      ar: a.teksArab,
+      la: a.teksLatin,
+      id: a.teksIndonesia
+    }))
+  };
+  READER.cache.set(no, data);
+}catch(e){
+  V().innerHTML = `<div class="view-in">
+    <button class="btn btn-ghost mb-4" data-go="quran"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+    <div class="card p-6 text-sm muted text-center">
+      <i class="fa-solid fa-wifi mr-1"></i>Gagal memuat surat. Periksa koneksi.
+      <div class="mt-3"><button class="btn btn-brand" data-go="quran/${no}">Coba lagi</button></div>
+    </div></div>`;
+  return;
+}
   }
   const range = PILIHAN.find(p => p.n===no && p.to) || null;
   let ayat = data.ayat;
